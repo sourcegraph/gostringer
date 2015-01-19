@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Stringer is a tool to automate the creation of methods that satisfy the fmt.Stringer
+// Gostringer is a tool to automate the creation of methods that satisfy the fmt.GoStringer
 // interface. Given the name of a (signed or unsigned) integer type T that has constants
-// defined, stringer will create a new self-contained Go source file implementing
-//	func (t T) String() string
+// defined, gostringer will create a new self-contained Go source file implementing
+//	func (t T) GoString() string
 // The file is created in the same package and directory as the package that defines T.
 // It has helpful defaults designed for use with go generate.
 //
-// Stringer works best with constants that are consecutive values such as created using iota,
+// Gostringer works best with constants that are consecutive values such as created using iota,
 // but creates good code regardless. In the future it might also provide custom support for
 // constant sets that are bit patterns.
 //
@@ -29,23 +29,23 @@
 //
 // running this command
 //
-//	stringer -type=Pill
+//	gostringer -type=Pill
 //
 // in the same directory will create the file pill_gostring.go, in package painkiller,
 // containing a definition of
 //
-//	func (Pill) String() string
+//	func (Pill) GoString() string
 //
-// That method will translate the value of a Pill constant to the string representation
+// That method will translate the value of a Pill constant to the Go syntax representation
 // of the respective constant name, so that the call fmt.Print(painkiller.Aspirin) will
-// print the string "Aspirin".
+// print the string "painkiller.Aspirin".
 //
 // Typically this process would be run using go generate, like this:
 //
-//	//go:generate stringer -type=Pill
+//	//go:generate gostringer -type=Pill
 //
 // If multiple constants have the same value, the lexically first matching name will
-// be used (in the example, Acetaminophen will print as "Paracetamol").
+// be used (in the example, Acetaminophen will print as "painkiller.Paracetamol").
 //
 // With no arguments, it processes the package in the current directory.
 // Otherwise, the arguments must name a single directory holding a Go package
@@ -88,10 +88,10 @@ var (
 // Usage is a replacement usage function for the flags package.
 func Usage() {
 	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "\tstringer [flags] -type T [directory]\n")
-	fmt.Fprintf(os.Stderr, "\tstringer [flags[ -type T files... # Must be a single package\n")
+	fmt.Fprintf(os.Stderr, "\tgostringer [flags] -type T [directory]\n")
+	fmt.Fprintf(os.Stderr, "\tgostringer [flags[ -type T files... # Must be a single package\n")
 	fmt.Fprintf(os.Stderr, "For more information, see:\n")
-	fmt.Fprintf(os.Stderr, "\thttp://godoc.org/golang.org/x/tools/cmd/stringer\n")
+	fmt.Fprintf(os.Stderr, "\thttp://godoc.org/github.com/shurcooL/gostringer\n")
 	fmt.Fprintf(os.Stderr, "Flags:\n")
 	flag.PrintDefaults()
 	os.Exit(2)
@@ -99,7 +99,7 @@ func Usage() {
 
 func main() {
 	log.SetFlags(0)
-	log.SetPrefix("stringer: ")
+	log.SetPrefix("gostringer: ")
 	flag.Usage = Usage
 	flag.Parse()
 	if len(*typeNames) == 0 {
@@ -201,7 +201,7 @@ func (g *Generator) parsePackageDir(directory string) {
 	var names []string
 	names = append(names, pkg.GoFiles...)
 	names = append(names, pkg.CgoFiles...)
-	// TODO: Need to think about constants in test files. Maybe write type_string_test.go
+	// TODO: Need to think about constants in test files. Maybe write type_gostring_test.go
 	// in a separate pass? For later.
 	// names = append(names, pkg.TestGoFiles...) // These are also in the "foo" package.
 	names = append(names, pkg.SFiles...)
@@ -318,7 +318,7 @@ func splitIntoRuns(values []Value) [][]Value {
 	// We use stable sort so the lexically first name is chosen for equal elements.
 	sort.Stable(byValue(values))
 	// Remove duplicates. Stable sort has put the one we want to print first,
-	// so use that one. The String method won't care about which named constant
+	// so use that one. The GoString method won't care about which named constant
 	// was the argument, so the first name for the given value is the only one to keep.
 	// We need to do this because identical values would cause the switch or map
 	// to fail to compile.
@@ -554,7 +554,7 @@ func (g *Generator) buildOneRun(runs [][]Value, typeName string) {
 	if values[0].value == 0 { // Signed or unsigned, 0 is still 0.
 		g.Printf(stringOneRun, typeName, usize(len(values)), lessThanZero, g.pkg.name)
 	} else {
-		g.Printf(stringOneRunWithOffset, typeName, values[0].String(), usize(len(values)), lessThanZero)
+		g.Printf(stringOneRunWithOffset, typeName, values[0].String(), usize(len(values)), lessThanZero, g.pkg.name)
 	}
 }
 
@@ -576,14 +576,15 @@ const stringOneRun = `func (i %[1]s) GoString() string {
 //	[2]: lowest defined value for type, as a string
 //	[3]: size of index element (8 for uint8 etc.)
 //	[4]: less than zero check (for signed types)
+//	[5]: package name
 /*
  */
 const stringOneRunWithOffset = `func (i %[1]s) GoString() string {
 	i -= %[2]s
 	if %[4]si+1 >= %[1]s(len(_%[1]s_index)) {
-		return fmt.Sprintf("%[1]s(%%d)", i + %[2]s)
+		return fmt.Sprintf("%[5]s.%[1]s(%%d)", i + %[2]s)
 	}
-	return _%[1]s_name[_%[1]s_index[i] : _%[1]s_index[i+1]]
+	return "%[5]s." + _%[1]s_name[_%[1]s_index[i] : _%[1]s_index[i+1]]
 }
 `
 
