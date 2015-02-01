@@ -57,7 +57,7 @@
 // where t is the lower-cased name of the first type listed. It can be overridden
 // with the -output flag.
 //
-package main
+package main // import "github.com/sourcegraph/gostringer"
 
 import (
 	"bytes"
@@ -92,7 +92,7 @@ func Usage() {
 	fmt.Fprintf(os.Stderr, "\tgostringer [flags] -type T [directory]\n")
 	fmt.Fprintf(os.Stderr, "\tgostringer [flags[ -type T files... # Must be a single package\n")
 	fmt.Fprintf(os.Stderr, "For more information, see:\n")
-	fmt.Fprintf(os.Stderr, "\thttp://godoc.org/github.com/shurcooL/gostringer\n")
+	fmt.Fprintf(os.Stderr, "\thttps://godoc.org/github.com/sourcegraph/gostringer\n")
 	fmt.Fprintf(os.Stderr, "Flags:\n")
 	flag.PrintDefaults()
 	os.Exit(2)
