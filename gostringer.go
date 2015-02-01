@@ -517,10 +517,10 @@ func (g *Generator) createIndexAndNameDecl(run []Value, typeName string, suffix 
 		b.WriteString(run[i].name)
 		indexes[i] = b.Len()
 	}
-	nameConst := fmt.Sprintf("_%s_name%s = %q", typeName, suffix, b.String())
+	nameConst := fmt.Sprintf("_%s_name%s_gostringer = %q", typeName, suffix, b.String())
 	nameLen := b.Len()
 	b.Reset()
-	fmt.Fprintf(b, "_%s_index%s = [...]uint%d{0, ", typeName, suffix, usize(nameLen))
+	fmt.Fprintf(b, "_%s_index%s_gostringer = [...]uint%d{0, ", typeName, suffix, usize(nameLen))
 	for i, v := range indexes {
 		if i > 0 {
 			fmt.Fprintf(b, ", ")
@@ -533,7 +533,7 @@ func (g *Generator) createIndexAndNameDecl(run []Value, typeName string, suffix 
 
 // declareNameVars declares the concatenated names string representing all the values in the runs.
 func (g *Generator) declareNameVars(runs [][]Value, typeName string, suffix string) {
-	g.Printf("const _%s_name%s = \"", typeName, suffix)
+	g.Printf("const _%s_name%s_gostringer = \"", typeName, suffix)
 	for _, run := range runs {
 		for i := range run {
 			g.Printf("%s", run[i].name)
@@ -565,10 +565,10 @@ func (g *Generator) buildOneRun(runs [][]Value, typeName string) {
 //	[3]: less than zero check (for signed types)
 //	[4]: package name
 const stringOneRun = `func (i %[1]s) GoString() string {
-	if %[3]si+1 >= %[1]s(len(_%[1]s_index)) {
+	if %[3]si+1 >= %[1]s(len(_%[1]s_index_gostringer)) {
 		return fmt.Sprintf("%[4]s.%[1]s(%%d)", i)
 	}
-	return "%[4]s." + _%[1]s_name[_%[1]s_index[i]:_%[1]s_index[i+1]]
+	return "%[4]s." + _%[1]s_name_gostringer[_%[1]s_index_gostringer[i]:_%[1]s_index_gostringer[i+1]]
 }
 `
 
@@ -582,10 +582,10 @@ const stringOneRun = `func (i %[1]s) GoString() string {
  */
 const stringOneRunWithOffset = `func (i %[1]s) GoString() string {
 	i -= %[2]s
-	if %[4]si+1 >= %[1]s(len(_%[1]s_index)) {
+	if %[4]si+1 >= %[1]s(len(_%[1]s_index_gostringer)) {
 		return fmt.Sprintf("%[5]s.%[1]s(%%d)", i + %[2]s)
 	}
-	return "%[5]s." + _%[1]s_name[_%[1]s_index[i] : _%[1]s_index[i+1]]
+	return "%[5]s." + _%[1]s_name_gostringer[_%[1]s_index_gostringer[i] : _%[1]s_index_gostringer[i+1]]
 }
 `
 
@@ -599,14 +599,14 @@ func (g *Generator) buildMultipleRuns(runs [][]Value, typeName string) {
 	for i, values := range runs {
 		if len(values) == 1 {
 			g.Printf("\tcase i == %s:\n", &values[0])
-			g.Printf("\t\treturn _%s_name_%d\n", typeName, i)
+			g.Printf("\t\treturn _%s_name_%d_gostringer\n", typeName, i)
 			continue
 		}
 		g.Printf("\tcase %s <= i && i <= %s:\n", &values[0], &values[len(values)-1])
 		if values[0].value != 0 {
 			g.Printf("\t\ti -= %s\n", &values[0])
 		}
-		g.Printf("\t\treturn _%s_name_%d[_%s_index_%d[i]:_%s_index_%d[i+1]]\n",
+		g.Printf("\t\treturn _%s_name_%d_gostringer[_%s_index_%d_gostringer[i]:_%s_index_%d_gostringer[i+1]]\n",
 			typeName, i, typeName, i, typeName, i)
 	}
 	g.Printf("\tdefault:\n")
@@ -620,11 +620,11 @@ func (g *Generator) buildMultipleRuns(runs [][]Value, typeName string) {
 func (g *Generator) buildMap(runs [][]Value, typeName string) {
 	g.Printf("\n")
 	g.declareNameVars(runs, typeName, "")
-	g.Printf("\nvar _%s_map = map[%s]string{\n", typeName, typeName)
+	g.Printf("\nvar _%s_map_gostringer = map[%s]string{\n", typeName, typeName)
 	n := 0
 	for _, values := range runs {
 		for _, value := range values {
-			g.Printf("\t%s: _%s_name[%d:%d],\n", &value, typeName, n, n+len(value.name))
+			g.Printf("\t%s: _%s_name_gostringer[%d:%d],\n", &value, typeName, n, n+len(value.name))
 			n += len(value.name)
 		}
 	}
@@ -634,7 +634,7 @@ func (g *Generator) buildMap(runs [][]Value, typeName string) {
 
 // Argument to format is the type name.
 const stringMap = `func (i %[1]s) String() string {
-	if str, ok := _%[1]s_map[i]; ok {
+	if str, ok := _%[1]s_map_gostringer[i]; ok {
 		return str
 	}
 	return fmt.Sprintf("%[1]s(%%d)", i)
