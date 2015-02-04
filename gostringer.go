@@ -629,14 +629,16 @@ func (g *Generator) buildMap(runs [][]Value, typeName string) {
 		}
 	}
 	g.Printf("}\n\n")
-	g.Printf(stringMap, typeName)
+	g.Printf(stringMap, typeName, g.pkg.name)
 }
 
-// Argument to format is the type name.
-const stringMap = `func (i %[1]s) String() string {
+// Arguments to format are:
+//	[1]: type name
+//	[2]: package name
+const stringMap = `func (i %[1]s) GoString() string {
 	if str, ok := _%[1]s_map_gostringer[i]; ok {
-		return str
+		return "%[2]s." + str
 	}
-	return fmt.Sprintf("%[1]s(%%d)", i)
+	return fmt.Sprintf("%[2]s.%[1]s(%%d)", i)
 }
 `
