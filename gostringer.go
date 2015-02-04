@@ -594,23 +594,23 @@ const stringOneRunWithOffset = `func (i %[1]s) GoString() string {
 func (g *Generator) buildMultipleRuns(runs [][]Value, typeName string) {
 	g.Printf("\n")
 	g.declareIndexAndNameVars(runs, typeName)
-	g.Printf("func (i %s) String() string {\n", typeName)
+	g.Printf("func (i %s) GoString() string {\n", typeName)
 	g.Printf("\tswitch {\n")
 	for i, values := range runs {
 		if len(values) == 1 {
 			g.Printf("\tcase i == %s:\n", &values[0])
-			g.Printf("\t\treturn _%s_name_%d_gostringer\n", typeName, i)
+			g.Printf("\t\treturn \"%s.\" + _%s_name_%d_gostringer\n", g.pkg.name, typeName, i)
 			continue
 		}
 		g.Printf("\tcase %s <= i && i <= %s:\n", &values[0], &values[len(values)-1])
 		if values[0].value != 0 {
 			g.Printf("\t\ti -= %s\n", &values[0])
 		}
-		g.Printf("\t\treturn _%s_name_%d_gostringer[_%s_index_%d_gostringer[i]:_%s_index_%d_gostringer[i+1]]\n",
-			typeName, i, typeName, i, typeName, i)
+		g.Printf("\t\treturn \"%s.\" + _%s_name_%d_gostringer[_%s_index_%d_gostringer[i]:_%s_index_%d_gostringer[i+1]]\n",
+			g.pkg.name, typeName, i, typeName, i, typeName, i)
 	}
 	g.Printf("\tdefault:\n")
-	g.Printf("\t\treturn fmt.Sprintf(\"%s(%%d)\", i)\n", typeName)
+	g.Printf("\t\treturn fmt.Sprintf(\"%s.%s(%%d)\", i)\n", g.pkg.name, typeName)
 	g.Printf("\t}\n")
 	g.Printf("}\n")
 }
