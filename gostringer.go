@@ -273,7 +273,7 @@ func (pkg *Package) check(fs *token.FileSet, astFiles []*ast.File) {
 	pkg.typesPkg = typesPkg
 }
 
-// generate produces the String method for the named type.
+// generate produces the GoString method for the named type.
 func (g *Generator) generate(typeName string) {
 	values := make([]Value, 0, 100)
 	for _, file := range g.pkg.files {
@@ -542,7 +542,7 @@ func (g *Generator) declareNameVars(runs [][]Value, typeName string, suffix stri
 	g.Printf("\"\n")
 }
 
-// buildOneRun generates the variables and String method for a single run of contiguous values.
+// buildOneRun generates the variables and GoString method for a single run of contiguous values.
 func (g *Generator) buildOneRun(runs [][]Value, typeName string) {
 	values := runs[0]
 	g.Printf("\n")
@@ -553,9 +553,9 @@ func (g *Generator) buildOneRun(runs [][]Value, typeName string) {
 		lessThanZero = "i < 0 || "
 	}
 	if values[0].value == 0 { // Signed or unsigned, 0 is still 0.
-		g.Printf(stringOneRun, typeName, usize(len(values)), lessThanZero, g.pkg.name)
+		g.Printf(goStringOneRun, typeName, usize(len(values)), lessThanZero, g.pkg.name)
 	} else {
-		g.Printf(stringOneRunWithOffset, typeName, values[0].String(), usize(len(values)), lessThanZero, g.pkg.name)
+		g.Printf(goStringOneRunWithOffset, typeName, values[0].String(), usize(len(values)), lessThanZero, g.pkg.name)
 	}
 }
 
@@ -564,7 +564,7 @@ func (g *Generator) buildOneRun(runs [][]Value, typeName string) {
 //	[2]: size of index element (8 for uint8 etc.)
 //	[3]: less than zero check (for signed types)
 //	[4]: package name
-const stringOneRun = `func (i %[1]s) GoString() string {
+const goStringOneRun = `func (i %[1]s) GoString() string {
 	if %[3]si+1 >= %[1]s(len(_%[1]s_index_gostringer)) {
 		return fmt.Sprintf("%[4]s.%[1]s(%%d)", i)
 	}
@@ -580,7 +580,7 @@ const stringOneRun = `func (i %[1]s) GoString() string {
 //	[5]: package name
 /*
  */
-const stringOneRunWithOffset = `func (i %[1]s) GoString() string {
+const goStringOneRunWithOffset = `func (i %[1]s) GoString() string {
 	i -= %[2]s
 	if %[4]si+1 >= %[1]s(len(_%[1]s_index_gostringer)) {
 		return fmt.Sprintf("%[5]s.%[1]s(%%d)", i + %[2]s)
@@ -589,7 +589,7 @@ const stringOneRunWithOffset = `func (i %[1]s) GoString() string {
 }
 `
 
-// buildMultipleRuns generates the variables and String method for multiple runs of contiguous values.
+// buildMultipleRuns generates the variables and GoString method for multiple runs of contiguous values.
 // For this pattern, a single Printf format won't do.
 func (g *Generator) buildMultipleRuns(runs [][]Value, typeName string) {
 	g.Printf("\n")
@@ -629,13 +629,13 @@ func (g *Generator) buildMap(runs [][]Value, typeName string) {
 		}
 	}
 	g.Printf("}\n\n")
-	g.Printf(stringMap, typeName, g.pkg.name)
+	g.Printf(goStringMap, typeName, g.pkg.name)
 }
 
 // Arguments to format are:
 //	[1]: type name
 //	[2]: package name
-const stringMap = `func (i %[1]s) GoString() string {
+const goStringMap = `func (i %[1]s) GoString() string {
 	if str, ok := _%[1]s_map_gostringer[i]; ok {
 		return "%[2]s." + str
 	}
