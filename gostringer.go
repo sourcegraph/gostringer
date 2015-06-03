@@ -565,7 +565,7 @@ func (g *Generator) buildOneRun(runs [][]Value, typeName string) {
 //	[3]: less than zero check (for signed types)
 //	[4]: package name
 const goStringOneRun = `func (i %[1]s) GoString() string {
-	if %[3]si+1 >= %[1]s(len(_%[1]s_index_gostringer)) {
+	if %[3]si >= %[1]s(len(_%[1]s_index_gostringer)-1) {
 		return fmt.Sprintf("%[4]s.%[1]s(%%d)", i)
 	}
 	return "%[4]s." + _%[1]s_name_gostringer[_%[1]s_index_gostringer[i]:_%[1]s_index_gostringer[i+1]]
@@ -582,7 +582,7 @@ const goStringOneRun = `func (i %[1]s) GoString() string {
  */
 const goStringOneRunWithOffset = `func (i %[1]s) GoString() string {
 	i -= %[2]s
-	if %[4]si+1 >= %[1]s(len(_%[1]s_index_gostringer)) {
+	if %[4]si >= %[1]s(len(_%[1]s_index_gostringer)-1) {
 		return fmt.Sprintf("%[5]s.%[1]s(%%d)", i + %[2]s)
 	}
 	return "%[5]s." + _%[1]s_name_gostringer[_%[1]s_index_gostringer[i] : _%[1]s_index_gostringer[i+1]]
