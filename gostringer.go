@@ -95,7 +95,6 @@ func Usage() {
 	fmt.Fprintf(os.Stderr, "\thttps://godoc.org/github.com/sourcegraph/gostringer\n")
 	fmt.Fprintf(os.Stderr, "Flags:\n")
 	flag.PrintDefaults()
-	os.Exit(2)
 }
 
 func main() {
